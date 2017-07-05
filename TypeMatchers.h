@@ -27,14 +27,16 @@ bool isQObjectPtrType(T *expr)
     auto qualType = expr->getType();
     auto bareType = qualType.split().Ty;
 
-    bool isConst = qualType.isConstQualified();
-    bool isVolatile = qualType.isVolatileQualified();
+    bool isConst = false;
+    bool isVolatile = false;
     bool isPointer = bareType->isPointerType();
 
     bool isPointeeQObject = false;
     if (isPointer)
     {
         auto identifier = bareType->getPointeeType().getBaseTypeIdentifier();
+        isConst = bareType->getPointeeType().isConstQualified();
+        isVolatile = bareType->getPointeeType().isVolatileQualified();
         if (identifier)
             isPointeeQObject = identifier->getName() == "QObject";
     }
