@@ -41,5 +41,5 @@ bool isQObjectPtrType(T *expr)
             isPointeeQObject = identifier->getName() == "QObject";
     }
 
-    return !isConst && !isVolatile && isPointer && isPointeeQObject;
+    return isConst && !isVolatile && isPointer && isPointeeQObject;
 }
