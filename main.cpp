@@ -82,6 +82,26 @@ public:
             {
                 for (int i = 0 ; i < callExpression->getNumArgs() ; i++)
                 {
+                    if (callExpression->getArg(i)->getLocEnd().isValid())
+                    {
+                        llvm::outs() << "Matching call argument " << i << " ";
+
+                        auto& sm = Context->getSourceManager();
+
+                        if (callExpression->getArg(i)->getLocStart().isMacroID())
+                        {
+                            auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(callExpression->getArg(i)->getLocStart());
+                            llvm::outs() << fullStartLocation.first.printToString(sm);
+                            llvm::outs() << " to ";
+                            llvm::outs() << fullStartLocation.second.printToString(sm);
+                            llvm::outs() << "\n";
+
+                        }
+
+
+                    }
+
+
                     if (const CallExpr *qflaglocationCall = dyn_cast<CallExpr>(callExpression->getArg(i)))
                     {
                         if (const ImplicitCastExpr *castExpr = dyn_cast<ImplicitCastExpr>(qflaglocationCall->getArg(0)))
