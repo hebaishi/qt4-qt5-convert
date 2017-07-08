@@ -57,18 +57,18 @@ public:
 
             if (isFirstCorrect && isSecondCorrect)
             {
-                llvm::outs() << "Found " << className << "::" << methodName << "( ";
-                llvm::outs() << declaration->getParamDecl(0)->getType().getAsString();
+                llvm::errs() << "Found " << className << "::" << methodName << "( ";
+                llvm::errs() << declaration->getParamDecl(0)->getType().getAsString();
                 for (int i=1 ; i < declaration->getNumParams() ; i++)
                 {
-                    llvm::outs() << ", " << declaration->getParamDecl(i)->getType().getAsString();
+                    llvm::errs() << ", " << declaration->getParamDecl(i)->getType().getAsString();
                 }
 
-                llvm::outs() << ")";
+                llvm::errs() << ")";
                 auto fullLocation = Context->getFullLoc(declaration->getLocStart());
-                llvm::outs() << " at " << fullLocation.getSpellingLineNumber();
-                llvm::outs() << ":" << fullLocation.getSpellingColumnNumber();
-                llvm::outs() << " in file" << fullLocation.getFileEntry()->getName() << "\n";
+                llvm::errs() << " at " << fullLocation.getSpellingLineNumber();
+                llvm::errs() << ":" << fullLocation.getSpellingColumnNumber();
+                llvm::errs() << " in file" << fullLocation.getFileEntry()->getName() << "\n";
                 myset.insert(declaration);
             }
         }
@@ -78,14 +78,14 @@ public:
 
     bool VisitCXXMemberCallExpr(CXXMemberCallExpr *callExpression)
     {
-        //      llvm::outs() << callExpression->getDirectCallee()->getAsFunction()->getDeclName() << "\n";
+        //      llvm::errs() << callExpression->getDirectCallee()->getAsFunction()->getDeclName() << "\n";
         //      if (callExpression->getDirectCallee()->getNameInfo().getName().getAsString() == "connect"
         //        && callExpression->getDecl()->getParent()->isClass()
         //        && callExpression->getDecl()->getParent()->getNameAsString() == "QObject")
         //    {
         //        FullSourceLoc FullLocation = Context->getFullLoc(callExpression->getLocStart());
         //        if (FullLocation.isValid())
-        //          llvm::outs() << "Found declaration at "
+        //          llvm::errs() << "Found declaration at "
         //                       << FullLocation.getSpellingLineNumber() << ":"
         //                       << FullLocation.getSpellingColumnNumber() << " in file "
         //                       << FullLocation.getFileEntry()->getName() << "\n";
@@ -120,12 +120,12 @@ public:
                         auto& sm = Context->getSourceManager();
                         if (callExpression->getArg(i)->getLocStart().isMacroID())
                         {
-                            llvm::outs() << "Matching call argument " << i << " ";
+                            llvm::errs() << "Matching call argument " << i << " ";
                             auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(callExpression->getArg(i)->getLocStart());
-                            llvm::outs() << fullStartLocation.first.printToString(sm);
-                            llvm::outs() << " to ";
-                            llvm::outs() << fullStartLocation.second.printToString(sm);
-                            llvm::outs() << "\n";
+                            llvm::errs() << fullStartLocation.first.printToString(sm);
+                            llvm::errs() << " to ";
+                            llvm::errs() << fullStartLocation.second.printToString(sm);
+                            llvm::errs() << "\n";
 
                             std::string replacementText = "&";
                             replacementText += lastTypeString;
@@ -137,29 +137,34 @@ public:
                         }
                     }
 
-                    std::vector<const Stmt*> allChildren;
-                    getExpressionsRecursive(callExpression->getArg(i), allChildren);
-                    for (const auto& child : allChildren)
+                    QualType argumentType;
+                    if (const ImplicitCastExpr* castExpr = dyn_cast<ImplicitCastExpr>(callExpression->getArg(i)))
                     {
-                        if (const DeclRefExpr* dclrefExpr = dyn_cast<DeclRefExpr>(child))
+                        if (const Expr* expr = dyn_cast<Expr>(*castExpr->child_begin()))
                         {
-//                                if (dclrefExpr->hasQualifier())
-//                                {
-//                                    lastTypeString = std::string(dclrefExpr->getQualifier() getName()) + lastTypeString;
-//                                }
-                            auto declarationType = dclrefExpr->getType();
-                            while (declarationType.getTypePtr()->isPointerType())
-                            {
-                                declarationType = declarationType.getTypePtr()->getPointeeType();
-                            }
-                            auto identifier = declarationType.getBaseTypeIdentifier();
-                            if (identifier)
-                                lastTypeString = identifier->getName();
+                            argumentType = expr->getType();
                         }
                     }
+                    else
+                    {
+                        argumentType = callExpression->getArg(i)->getType();
+                    }
+
+
+                    if (argumentType.getTypePtr()->isPointerType())
+                    {
+                        argumentType = argumentType.getTypePtr()->getPointeeType();
+                    }
+                    argumentType.removeLocalConst();
+                    clang::PrintingPolicy policy(Context->getLangOpts());
+                    policy.SuppressUnwrittenScope = 1;
+                    policy.TerseOutput = 1;
+                    policy.PolishForDeclaration = 1;
+                    lastTypeString.clear();
+                    argumentType.getAsStringInternal(lastTypeString, policy);
                     if (!lastTypeString.empty())
                     {
-                        llvm::outs() << "Type string for parameter " << i << " is " << lastTypeString << "\n";
+                        llvm::errs() << "Type string for parameter " << i << " is " << lastTypeString << "\n";
                     }
                 }
 
