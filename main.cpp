@@ -14,13 +14,34 @@
 #include <iostream>
 #include <set>
 
+std::string extractMethodCall(const std::string& literal)
+{
+    std::string result = literal;
+    if (!result.empty())
+    {
+        result.erase(result.begin(), result.begin() + 1);
+        auto parenPos = result.find('(');
+        result = result.substr(0, parenPos);
+    }
+    return result;
+}
+
+void getExpressionsRecursive(const clang::Stmt* expr, std::vector<const clang::Stmt*>& children)
+{
+    for (const auto& child : expr->children())
+    {
+        getExpressionsRecursive(child, children);
+        children.push_back(child);
+    }
+}
+
 using namespace clang;
 
 class FindNamedClassVisitor
         : public RecursiveASTVisitor<FindNamedClassVisitor> {
 public:
     explicit FindNamedClassVisitor(ASTContext *Context)
-        : Context(Context) {}
+        : Context(Context), _rewriter(Context->getSourceManager(), Context->getLangOpts()) {}
 
     bool VisitCXXMethodDecl(CXXMethodDecl* declaration)
     {
@@ -75,52 +96,88 @@ public:
 
     bool VisitCallExpr(CallExpr *callExpression)
     {
-        Rewriter fileWriter(Context->getSourceManager(), Context->getLangOpts());
+        std::string methodCall, lastTypeString;
         if (callExpression->getDirectCallee())
         {
             if (myset.find(callExpression->getDirectCallee()->getFirstDecl()) != myset.end())
             {
                 for (int i = 0 ; i < callExpression->getNumArgs() ; i++)
                 {
-                    if (callExpression->getArg(i)->getLocEnd().isValid())
-                    {
-                        llvm::outs() << "Matching call argument " << i << " ";
-
-                        auto& sm = Context->getSourceManager();
-
-                        if (callExpression->getArg(i)->getLocStart().isMacroID())
-                        {
-                            auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(callExpression->getArg(i)->getLocStart());
-                            llvm::outs() << fullStartLocation.first.printToString(sm);
-                            llvm::outs() << " to ";
-                            llvm::outs() << fullStartLocation.second.printToString(sm);
-                            llvm::outs() << "\n";
-
-                        }
-
-
-                    }
-
-
                     if (const CallExpr *qflaglocationCall = dyn_cast<CallExpr>(callExpression->getArg(i)))
                     {
                         if (const ImplicitCastExpr *castExpr = dyn_cast<ImplicitCastExpr>(qflaglocationCall->getArg(0)))
                         {
                             if (const StringLiteral* literal = dyn_cast<StringLiteral>(*castExpr->child_begin()))
                             {
-                                llvm::outs() << "Found string!! " << literal->getBytes() << "\n";
+                                methodCall = extractMethodCall(literal->getBytes());
                             }
                         }
                     }
+
+                    if (callExpression->getArg(i)->getLocEnd().isValid())
+                    {
+
+                        auto& sm = Context->getSourceManager();
+                        if (callExpression->getArg(i)->getLocStart().isMacroID())
+                        {
+                            llvm::outs() << "Matching call argument " << i << " ";
+                            auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(callExpression->getArg(i)->getLocStart());
+                            llvm::outs() << fullStartLocation.first.printToString(sm);
+                            llvm::outs() << " to ";
+                            llvm::outs() << fullStartLocation.second.printToString(sm);
+                            llvm::outs() << "\n";
+
+                            std::string replacementText = "&";
+                            replacementText += lastTypeString;
+                            replacementText += "::";
+                            replacementText += methodCall;
+                            _rewriter.ReplaceText(SourceRange(fullStartLocation.first, fullStartLocation.second), replacementText);
+                            methodCall.clear();
+
+                        }
+                    }
+
+                    std::vector<const Stmt*> allChildren;
+                    getExpressionsRecursive(callExpression->getArg(i), allChildren);
+                    for (const auto& child : allChildren)
+                    {
+                        if (const DeclRefExpr* dclrefExpr = dyn_cast<DeclRefExpr>(child))
+                        {
+//                                if (dclrefExpr->hasQualifier())
+//                                {
+//                                    lastTypeString = std::string(dclrefExpr->getQualifier() getName()) + lastTypeString;
+//                                }
+                            auto declarationType = dclrefExpr->getType();
+                            while (declarationType.getTypePtr()->isPointerType())
+                            {
+                                declarationType = declarationType.getTypePtr()->getPointeeType();
+                            }
+                            auto identifier = declarationType.getBaseTypeIdentifier();
+                            if (identifier)
+                                lastTypeString = identifier->getName();
+                        }
+                    }
+                    if (!lastTypeString.empty())
+                    {
+                        llvm::outs() << "Type string for parameter " << i << " is " << lastTypeString << "\n";
+                    }
                 }
+
             }
         }
+
         return true;
+    }
+
+    void dumpToOutputStream()
+    {
+        _rewriter.getEditBuffer(Context->getSourceManager().getMainFileID()).write(llvm::outs());
     }
 
 private:
     ASTContext *Context;
     std::set <void*> myset;
+    Rewriter _rewriter;
     std::vector<clang::tooling::Replacement> replacements;
 };
 
@@ -131,6 +188,7 @@ public:
 
     virtual void HandleTranslationUnit(clang::ASTContext &Context) {
         Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+        Visitor.dumpToOutputStream();
     }
 private:
     FindNamedClassVisitor Visitor;
