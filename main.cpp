@@ -14,6 +14,8 @@
 #include <iostream>
 #include <set>
 
+#include <NamespaceResolver.h>
+
 std::string extractMethodCall(const std::string& literal)
 {
     std::string result = literal;
@@ -32,7 +34,16 @@ class FindNamedClassVisitor
         : public RecursiveASTVisitor<FindNamedClassVisitor> {
 public:
     explicit FindNamedClassVisitor(ASTContext *Context)
-        : Context(Context), _rewriter(Context->getSourceManager(), Context->getLangOpts()) {}
+        : Context(Context),
+          _rewriter(Context->getSourceManager(), Context->getLangOpts()),
+          m_resolver(Context->getLangOpts())
+    {}
+
+    bool VisitNamespaceDecl(NamespaceDecl* context)
+    {
+        m_resolver.visitDeclContext(context);
+        return true;
+    }
 
     bool VisitCXXMethodDecl(CXXMethodDecl* declaration)
     {
@@ -122,23 +133,10 @@ public:
                         argumentType = callExpression->getArg(i)->getType();
                     }
 
+                    lastTypeString = m_resolver.ResolveType(argumentType);
 
-                    if (argumentType.getTypePtr()->isPointerType())
-                    {
-                        argumentType = argumentType.getTypePtr()->getPointeeType();
-                    }
-                    argumentType.removeLocalConst();
-                    clang::PrintingPolicy policy(Context->getLangOpts());
-                    policy.SuppressUnwrittenScope = 1;
-                    policy.TerseOutput = 1;
-                    policy.PolishForDeclaration = 1;
-                    policy.SuppressScope = 1;
-                    lastTypeString.clear();
-                    argumentType.getAsStringInternal(lastTypeString, policy);
                     if (!lastTypeString.empty())
-                    {
                         llvm::errs() << "Type string for parameter " << i << " is " << lastTypeString << "\n";
-                    }
                 }
 
             }
@@ -157,6 +155,7 @@ private:
     std::set <void*> myset;
     Rewriter _rewriter;
     std::vector<clang::tooling::Replacement> replacements;
+    NamespaceResolver m_resolver;
 };
 
 class FindNamedClassConsumer : public clang::ASTConsumer {
