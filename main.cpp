@@ -57,8 +57,13 @@ public:
             bool isFirstCorrect = isQObjectPtrType(declaration->getParamDecl(0));
             bool isSecondCorrect = isConstCharPtrType(declaration->getParamDecl(1));
 
+
             if (isFirstCorrect && isSecondCorrect)
             {
+                auto fullLocation = Context->getFullLoc(declaration->getLocStart());
+                llvm::errs() << fullLocation.getFileEntry()->getName();
+                llvm::errs() << ":" << fullLocation.getSpellingLineNumber();
+                llvm::errs() << ":" << fullLocation.getSpellingColumnNumber() << " ";
                 llvm::errs() << "Found " << className << "::" << methodName << "( ";
                 llvm::errs() << declaration->getParamDecl(0)->getType().getAsString();
                 for (int i=1 ; i < declaration->getNumParams() ; i++)
@@ -67,12 +72,9 @@ public:
                 }
 
                 llvm::errs() << ")";
-                auto fullLocation = Context->getFullLoc(declaration->getLocStart());
-                llvm::errs() << " at " << fullLocation.getSpellingLineNumber();
-                llvm::errs() << ":" << fullLocation.getSpellingColumnNumber();
-                llvm::errs() << " in file" << fullLocation.getFileEntry()->getName() << "\n";
                 myset.insert(declaration);
             }
+            llvm::errs() << "\n";
         }
         return true;
     }
