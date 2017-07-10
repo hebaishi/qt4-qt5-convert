@@ -26,15 +26,6 @@ std::string extractMethodCall(const std::string& literal)
     return result;
 }
 
-void getExpressionsRecursive(const clang::Stmt* expr, std::vector<const clang::Stmt*>& children)
-{
-    for (const auto& child : expr->children())
-    {
-        getExpressionsRecursive(child, children);
-        children.push_back(child);
-    }
-}
-
 using namespace clang;
 
 class FindNamedClassVisitor
@@ -73,25 +64,6 @@ public:
             }
         }
         return true;
-    }
-
-
-    bool VisitCXXMemberCallExpr(CXXMemberCallExpr *callExpression)
-    {
-        //      llvm::errs() << callExpression->getDirectCallee()->getAsFunction()->getDeclName() << "\n";
-        //      if (callExpression->getDirectCallee()->getNameInfo().getName().getAsString() == "connect"
-        //        && callExpression->getDecl()->getParent()->isClass()
-        //        && callExpression->getDecl()->getParent()->getNameAsString() == "QObject")
-        //    {
-        //        FullSourceLoc FullLocation = Context->getFullLoc(callExpression->getLocStart());
-        //        if (FullLocation.isValid())
-        //          llvm::errs() << "Found declaration at "
-        //                       << FullLocation.getSpellingLineNumber() << ":"
-        //                       << FullLocation.getSpellingColumnNumber() << " in file "
-        //                       << FullLocation.getFileEntry()->getName() << "\n";
-        //    }
-        return true;
-
     }
 
     bool VisitCallExpr(CallExpr *callExpression)
@@ -160,6 +132,7 @@ public:
                     policy.SuppressUnwrittenScope = 1;
                     policy.TerseOutput = 1;
                     policy.PolishForDeclaration = 1;
+                    policy.SuppressScope = 1;
                     lastTypeString.clear();
                     argumentType.getAsStringInternal(lastTypeString, policy);
                     if (!lastTypeString.empty())
