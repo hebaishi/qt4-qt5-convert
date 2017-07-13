@@ -1,3 +1,6 @@
+#ifndef NAMESPACERESOLVER_H
+#define NAMESPACERESOLVER_H
+
 #include <clang/AST/DeclBase.h>
 #include <clang/AST/DeclCXX.h>
 
@@ -14,3 +17,5 @@ private:
     clang::DeclContext* m_lastContext = nullptr;
     clang::LangOptions m_langOptions;
 };
+
+#endif
