@@ -1,4 +1,6 @@
 #include "TypeMatchers.h"
+#include <ContextMatchers.h>
+#include <clang/AST/DeclCXX.h>
 
 bool isConstCharPtrType(const clang::QualType& type)
 {
@@ -28,3 +30,17 @@ bool isQObjectPtrType(const clang::QualType& type)
     }
     return false;
 }
+
+bool isQtConnectionTypeEnum(const clang::QualType& type)
+{
+    bool isEnum = type.getTypePtr()->isEnumeralType();
+    auto identifier = type.getBaseTypeIdentifier();
+    if (identifier)
+    {
+        std::string name = identifier->getName();
+        bool isNameSpaceCorrect = isEnumInQtNamespace(type);
+        return isEnum && name == "ConnectionType" && isNameSpaceCorrect;
+    }
+    return false;
+}
+

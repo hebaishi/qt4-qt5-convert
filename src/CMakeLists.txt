@@ -1,6 +1,19 @@
 project(qt4-qt5-convert)
-set(SOURCES main.cpp TypeMatchers.cpp NamespaceResolver.cpp)
-set(HEADERS TypeMatchers.h NamespaceResolver.h)
+
+set(
+  SOURCES
+  main.cpp
+  TypeMatchers.cpp
+  ContextMatchers.cpp
+  NamespaceResolver.cpp
+)
+
+set(
+  HEADERS
+  TypeMatchers.h
+  ContextMatchers.h
+  NamespaceResolver.h
+)
 
 add_clang_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
