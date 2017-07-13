@@ -54,8 +54,8 @@ public:
                 && declaration->getAccess() == AccessSpecifier::AS_public
                 && declaration->getNumParams() >= 3)
         {
-            bool isFirstCorrect = isQObjectPtrType(declaration->getParamDecl(0));
-            bool isSecondCorrect = isConstCharPtrType(declaration->getParamDecl(1));
+            bool isFirstCorrect = isQObjectPtrType(declaration->getParamDecl(0)->getType());
+            bool isSecondCorrect = isConstCharPtrType(declaration->getParamDecl(1)->getType());
 
 
             if (isFirstCorrect && isSecondCorrect)
@@ -66,7 +66,7 @@ public:
                 llvm::errs() << ":" << fullLocation.getSpellingColumnNumber() << " ";
                 llvm::errs() << "Found " << className << "::" << methodName << "( ";
                 llvm::errs() << declaration->getParamDecl(0)->getType().getAsString();
-                for (int i=1 ; i < declaration->getNumParams() ; i++)
+                for (auto i=1ul ; i < declaration->getNumParams() ; i++)
                 {
                     llvm::errs() << ", " << declaration->getParamDecl(i)->getType().getAsString();
                 }
@@ -86,7 +86,7 @@ public:
         {
             if (myset.find(callExpression->getDirectCallee()->getFirstDecl()) != myset.end())
             {
-                for (int i = 0 ; i < callExpression->getNumArgs() ; i++)
+                for (auto i = 0ul ; i < callExpression->getNumArgs() ; i++)
                 {
                     if (const CallExpr *qflaglocationCall = dyn_cast<CallExpr>(callExpression->getArg(i)))
                     {
