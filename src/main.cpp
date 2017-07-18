@@ -11,6 +11,7 @@
 
 #include <TypeMatchers.h>
 #include <FunctionMatcher.h>
+#include <CustomPrinter.h>
 
 #include <iostream>
 #include <set>
@@ -60,22 +61,8 @@ public:
     {
         if (m_connectMatcher.match(declaration))
         {
-            auto methodName = declaration->getAsFunction()->getNameInfo().getAsString();
-            auto className = declaration->getParent()->getNameAsString();
-            auto fullLocation = Context->getFullLoc(declaration->getLocStart());
-            llvm::errs() << fullLocation.getFileEntry()->getName();
-            llvm::errs() << ":" << fullLocation.getSpellingLineNumber();
-            llvm::errs() << ":" << fullLocation.getSpellingColumnNumber() << " ";
-            llvm::errs() << "Found " << className << "::" << methodName << "( ";
-            llvm::errs() << declaration->getParamDecl(0)->getType().getAsString();
-            for (auto i=1ul ; i < declaration->getNumParams() ; i++)
-            {
-                llvm::errs() << ", " << declaration->getParamDecl(i)->getType().getAsString();
-            }
-
-            llvm::errs() << ")";
+            CustomPrinter::printMethod(declaration);
             myset.insert(declaration);
-            llvm::errs() << "\n";
         }
         return true;
     }
@@ -106,12 +93,7 @@ public:
                         auto& sm = Context->getSourceManager();
                         if (callExpression->getArg(i)->getLocStart().isMacroID())
                         {
-                            llvm::errs() << "Matching call argument " << i << " ";
                             auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(callExpression->getArg(i)->getLocStart());
-                            llvm::errs() << fullStartLocation.first.printToString(sm);
-                            llvm::errs() << " to ";
-                            llvm::errs() << fullStartLocation.second.printToString(sm);
-                            llvm::errs() << "\n";
 
                             std::string replacementText = "&";
                             replacementText += lastTypeString;
@@ -137,9 +119,6 @@ public:
                     }
 
                     lastTypeString = m_resolver.ResolveType(argumentType);
-
-                    if (!lastTypeString.empty())
-                        llvm::errs() << "Type string for parameter " << i << " is " << lastTypeString << "\n";
                 }
 
             }

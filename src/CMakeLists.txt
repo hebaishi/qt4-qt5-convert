@@ -7,6 +7,7 @@ set(
   ContextMatchers.cpp
   NamespaceResolver.cpp
   FunctionMatcher.cpp
+  CustomPrinter.cpp
 )
 
 set(
@@ -15,6 +16,7 @@ set(
   ContextMatchers.h
   NamespaceResolver.h
   FunctionMatcher.h
+  CustomPrinter.h
 )
 
 add_clang_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
