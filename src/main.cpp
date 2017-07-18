@@ -10,6 +10,7 @@
 #include <clang/Tooling/Core/Replacement.h>
 
 #include <TypeMatchers.h>
+#include <FunctionMatcher.h>
 
 #include <iostream>
 #include <set>
@@ -37,7 +38,17 @@ public:
         : Context(Context),
           _rewriter(Context->getSourceManager(), Context->getLangOpts()),
           m_resolver(Context->getLangOpts())
-    {}
+    {
+        m_connectMatcher.setClassNameMatcher("QObject")
+                .setMethodNameMatcher("connect")
+                .setReturnTypeMatcher(TypeMatchers::isQMetaObjectConnectionType)
+                .setAccessSpecifierMatcher(AccessSpecifier::AS_public)
+                .addParameterMatcher(TypeMatchers::isQObjectPtrType)
+                .addParameterMatcher(TypeMatchers::isConstCharPtrType)
+                .addParameterMatcher(TypeMatchers::isQObjectPtrType)
+                .addParameterMatcher(TypeMatchers::isConstCharPtrType)
+                .addParameterMatcher(TypeMatchers::isQtConnectionTypeEnum);
+    }
 
     bool VisitNamespaceDecl(NamespaceDecl* context)
     {
@@ -47,33 +58,23 @@ public:
 
     bool VisitCXXMethodDecl(CXXMethodDecl* declaration)
     {
-        auto methodName = declaration->getAsFunction()->getNameInfo().getAsString();
-        auto className = declaration->getParent()->getNameAsString();
-        if (methodName == "connect"
-                && className == "QObject"
-                && declaration->getAccess() == AccessSpecifier::AS_public
-                && declaration->getNumParams() >= 3)
+        if (m_connectMatcher.match(declaration))
         {
-            bool isFirstCorrect = isQObjectPtrType(declaration->getParamDecl(0)->getType());
-            bool isSecondCorrect = isConstCharPtrType(declaration->getParamDecl(1)->getType());
-
-
-            if (isFirstCorrect && isSecondCorrect)
+            auto methodName = declaration->getAsFunction()->getNameInfo().getAsString();
+            auto className = declaration->getParent()->getNameAsString();
+            auto fullLocation = Context->getFullLoc(declaration->getLocStart());
+            llvm::errs() << fullLocation.getFileEntry()->getName();
+            llvm::errs() << ":" << fullLocation.getSpellingLineNumber();
+            llvm::errs() << ":" << fullLocation.getSpellingColumnNumber() << " ";
+            llvm::errs() << "Found " << className << "::" << methodName << "( ";
+            llvm::errs() << declaration->getParamDecl(0)->getType().getAsString();
+            for (auto i=1ul ; i < declaration->getNumParams() ; i++)
             {
-                auto fullLocation = Context->getFullLoc(declaration->getLocStart());
-                llvm::errs() << fullLocation.getFileEntry()->getName();
-                llvm::errs() << ":" << fullLocation.getSpellingLineNumber();
-                llvm::errs() << ":" << fullLocation.getSpellingColumnNumber() << " ";
-                llvm::errs() << "Found " << className << "::" << methodName << "( ";
-                llvm::errs() << declaration->getParamDecl(0)->getType().getAsString();
-                for (auto i=1ul ; i < declaration->getNumParams() ; i++)
-                {
-                    llvm::errs() << ", " << declaration->getParamDecl(i)->getType().getAsString();
-                }
-
-                llvm::errs() << ")";
-                myset.insert(declaration);
+                llvm::errs() << ", " << declaration->getParamDecl(i)->getType().getAsString();
             }
+
+            llvm::errs() << ")";
+            myset.insert(declaration);
             llvm::errs() << "\n";
         }
         return true;
@@ -158,6 +159,7 @@ private:
     Rewriter _rewriter;
     std::vector<clang::tooling::Replacement> replacements;
     NamespaceResolver m_resolver;
+    FunctionMatcher m_connectMatcher;
 };
 
 class FindNamedClassConsumer : public clang::ASTConsumer {

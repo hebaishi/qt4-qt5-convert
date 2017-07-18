@@ -2,6 +2,9 @@
 #include <ContextMatchers.h>
 #include <clang/AST/DeclCXX.h>
 
+namespace TypeMatchers
+{
+
 bool isConstCharPtrType(const clang::QualType& type)
 {
     if (type.getTypePtr()->isPointerType())
@@ -44,3 +47,25 @@ bool isQtConnectionTypeEnum(const clang::QualType& type)
     return false;
 }
 
+
+bool isVoidType(const clang::QualType &type)
+{
+    return type.getTypePtr()->isVoidType();
+}
+
+bool isQMetaObjectConnectionType(const clang::QualType &type)
+{
+    auto recordDecl = type.getTypePtr()->getAsCXXRecordDecl();
+    if (recordDecl)
+    {
+        auto currentContext = recordDecl->getDeclContext();
+        if (const clang::CXXRecordDecl* parentRecordDecl = clang::dyn_cast<clang::CXXRecordDecl>(currentContext))
+        {
+            return parentRecordDecl->getNameAsString() == "QMetaObject"
+                    && recordDecl->getNameAsString() == "Connection";
+        }
+    }
+    return false;
+}
+
+}

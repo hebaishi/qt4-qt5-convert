@@ -6,6 +6,7 @@ set(
   TypeMatchers.cpp
   ContextMatchers.cpp
   NamespaceResolver.cpp
+  FunctionMatcher.cpp
 )
 
 set(
@@ -13,6 +14,7 @@ set(
   TypeMatchers.h
   ContextMatchers.h
   NamespaceResolver.h
+  FunctionMatcher.h
 )
 
 add_clang_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
