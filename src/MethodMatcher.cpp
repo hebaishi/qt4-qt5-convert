@@ -1,46 +1,46 @@
-#include "FunctionMatcher.h"
+#include "MethodMatcher.h"
 
 #include <TypeMatchers.h>
 
 #include <clang/AST/Decl.h>
 #include <clang/AST/DeclCXX.h>
 
-FunctionMatcher::FunctionMatcher() :
+MethodMatcher::MethodMatcher() :
     m_returnType(TypeMatchers::isVoidType),
     m_specifier(clang::AccessSpecifier::AS_none)
 {}
 
-FunctionMatcher &FunctionMatcher::matchParameter(const QualTypeMatcher &func)
+MethodMatcher &MethodMatcher::matchParameter(const QualTypeMatcher &func)
 {
     m_parameters.push_back(func);
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::matchReturnType(const QualTypeMatcher &methodName)
+MethodMatcher &MethodMatcher::matchReturnType(const QualTypeMatcher &methodName)
 {
     m_returnType = methodName;
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::matchMethodName(const std::string &methodName)
+MethodMatcher &MethodMatcher::matchMethodName(const std::string &methodName)
 {
     m_methodName = methodName;
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::matchClassName(const std::string &className)
+MethodMatcher &MethodMatcher::matchClassName(const std::string &className)
 {
     m_className = className;
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::matchAccessSpecifier(clang::AccessSpecifier specifier)
+MethodMatcher &MethodMatcher::matchAccessSpecifier(clang::AccessSpecifier specifier)
 {
     m_specifier = specifier;
     return *this;
 }
 
-bool FunctionMatcher::isMatch(clang::CXXMethodDecl *decl) const
+bool MethodMatcher::isMatch(clang::CXXMethodDecl *decl) const
 {
     assert(!m_methodName.empty());
     assert(!m_className.empty());
@@ -53,7 +53,7 @@ bool FunctionMatcher::isMatch(clang::CXXMethodDecl *decl) const
             && matchArguments(decl);
 }
 
-bool FunctionMatcher::matchArguments(clang::CXXMethodDecl *decl) const
+bool MethodMatcher::matchArguments(clang::CXXMethodDecl *decl) const
 {
     if (decl->getAsFunction()->getNumParams() == m_parameters.size())
     {

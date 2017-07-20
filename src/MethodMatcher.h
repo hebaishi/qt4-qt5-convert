@@ -14,15 +14,15 @@ namespace clang
 
 typedef std::function<bool(const clang::QualType&)> QualTypeMatcher;
 
-class FunctionMatcher
+class MethodMatcher
 {
 public:
-    FunctionMatcher();
-    FunctionMatcher& matchParameter(const QualTypeMatcher& func);
-    FunctionMatcher& matchReturnType(const QualTypeMatcher& methodName);
-    FunctionMatcher& matchMethodName(const std::string& methodName);
-    FunctionMatcher& matchClassName(const std::string& className);
-    FunctionMatcher& matchAccessSpecifier(clang::AccessSpecifier specifier);
+    MethodMatcher();
+    MethodMatcher& matchParameter(const QualTypeMatcher& func);
+    MethodMatcher& matchReturnType(const QualTypeMatcher& methodName);
+    MethodMatcher& matchMethodName(const std::string& methodName);
+    MethodMatcher& matchClassName(const std::string& className);
+    MethodMatcher& matchAccessSpecifier(clang::AccessSpecifier specifier);
     bool isMatch(clang::CXXMethodDecl* decl) const;
 
 private:

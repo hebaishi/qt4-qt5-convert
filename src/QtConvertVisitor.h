@@ -2,7 +2,7 @@
 #define QTCONVERTVISITOR_H
 
 #include <NamespaceResolver.h>
-#include <FunctionMatcher.h>
+#include <MethodMatcher.h>
 
 #include <clang/AST/RecursiveASTVisitor.h>
 #include <clang/Rewrite/Core/Rewriter.h>
@@ -35,7 +35,7 @@ private:
     clang::Rewriter _rewriter;
     std::vector<clang::tooling::Replacement> replacements;
     NamespaceResolver m_resolver;
-    FunctionMatcher m_connectMatcher;
+    MethodMatcher m_connectMatcher;
 };
 
 #endif
