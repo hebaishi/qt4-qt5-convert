@@ -60,8 +60,6 @@ bool QtConvertVisitor::VisitCallExpr(clang::CallExpr *callExpression)
 
                 if (callExpression->getArg(i)->getLocEnd().isValid())
                 {
-
-                    auto& sm = Context->getSourceManager();
                     if (callExpression->getArg(i)->getLocStart().isMacroID())
                     {
                         auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(callExpression->getArg(i)->getLocStart());
