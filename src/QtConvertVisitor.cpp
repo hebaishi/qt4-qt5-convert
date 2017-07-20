@@ -45,60 +45,59 @@ bool QtConvertVisitor::VisitCallExpr(clang::CallExpr *callExpression)
     {
         if (myset.find(callExpression->getDirectCallee()->getFirstDecl()) != myset.end())
         {
-            for (auto i = 0ul ; i < callExpression->getNumArgs() ; i++)
+            for (const auto& argument : callExpression->arguments())
             {
-                if (const clang::CallExpr *qflaglocationCall = clang::dyn_cast<clang::CallExpr>(callExpression->getArg(i)))
+                auto argumentType = argument->getType();
+
+                if (TypeMatchers::isQObjectPtrType(argumentType))
                 {
-                    if (const clang::ImplicitCastExpr *castExpr = clang::dyn_cast<clang::ImplicitCastExpr>(qflaglocationCall->getArg(0)))
+                    clang::QualType argumentType = getRealArgumentType(argument);
+                    lastTypeString = m_resolver.ResolveType(argumentType);
+                }
+                else if (TypeMatchers::isConstCharPtrType(argumentType))
+                {
+                    methodCall = getMethodCallIfPresent(argument);
+                    if (argument->getLocStart().isMacroID() && !methodCall.empty())
                     {
-                        if (const clang::StringLiteral* literal = clang::dyn_cast<clang::StringLiteral>(*castExpr->child_begin()))
-                        {
-                            methodCall = extractMethodCall(literal->getBytes());
-                        }
+                        addReplacement(argument, lastTypeString, methodCall);
                     }
                 }
-
-                if (callExpression->getArg(i)->getLocEnd().isValid())
-                {
-                    if (callExpression->getArg(i)->getLocStart().isMacroID())
-                    {
-                        auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(callExpression->getArg(i)->getLocStart());
-
-                        std::string replacementText = "&";
-                        replacementText += lastTypeString;
-                        replacementText += "::";
-                        replacementText += methodCall;
-                        _rewriter.ReplaceText(clang::SourceRange(fullStartLocation.first, fullStartLocation.second), replacementText);
-                        methodCall.clear();
-
-                    }
-                }
-
-                clang::QualType argumentType;
-                if (const clang::ImplicitCastExpr* castExpr = clang::dyn_cast<clang::ImplicitCastExpr>(callExpression->getArg(i)))
-                {
-                    if (const clang::Expr* expr = clang::dyn_cast<clang::Expr>(*castExpr->child_begin()))
-                    {
-                        argumentType = expr->getType();
-                    }
-                }
-                else
-                {
-                    argumentType = callExpression->getArg(i)->getType();
-                }
-
-                lastTypeString = m_resolver.ResolveType(argumentType);
             }
-
         }
     }
-
     return true;
 }
 
 void QtConvertVisitor::dumpToOutputStream()
 {
     _rewriter.getEditBuffer(Context->getSourceManager().getMainFileID()).write(llvm::outs());
+}
+
+clang::QualType QtConvertVisitor::getRealArgumentType(const clang::Expr *expression)
+{
+    if (const clang::ImplicitCastExpr* castExpr = clang::dyn_cast<clang::ImplicitCastExpr>(expression))
+    {
+        if (const clang::Expr* expr = clang::dyn_cast<clang::Expr>(*castExpr->child_begin()))
+        {
+            return expr->getType();
+        }
+    }
+    return expression->getType();
+}
+
+std::string QtConvertVisitor::getMethodCallIfPresent(const clang::Expr *expression)
+{
+    if (const clang::CallExpr *qflaglocationCall = clang::dyn_cast<clang::CallExpr>(expression))
+    {
+        if (const clang::ImplicitCastExpr *castExpr = clang::dyn_cast<clang::ImplicitCastExpr>(qflaglocationCall->getArg(0)))
+        {
+            if (const clang::StringLiteral* literal = clang::dyn_cast<clang::StringLiteral>(*castExpr->child_begin()))
+            {
+                return extractMethodCall(literal->getBytes());
+            }
+        }
+    }
+    return std::string();
 }
 
 std::string QtConvertVisitor::extractMethodCall(const std::string& literal)
@@ -111,4 +110,18 @@ std::string QtConvertVisitor::extractMethodCall(const std::string& literal)
         result = result.substr(0, parenPos);
     }
     return result;
+}
+
+void QtConvertVisitor::addReplacement(const clang::Expr *expression, const std::string &typeString, const std::string &methodCall)
+{
+    auto fullStartLocation = Context->getSourceManager().getImmediateExpansionRange(
+                expression->getLocStart());
+
+    std::string replacementText = "&";
+    replacementText += typeString;
+    replacementText += "::";
+    replacementText += methodCall;
+    _rewriter.ReplaceText(clang::SourceRange(
+                              fullStartLocation.first, fullStartLocation.second
+                              ), replacementText);
 }

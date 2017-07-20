@@ -28,7 +28,11 @@ public:
     void dumpToOutputStream();
 
 private:
+    clang::QualType getRealArgumentType(const clang::Expr* expression);
+    std::string getMethodCallIfPresent(const clang::Expr* expression);
     std::string extractMethodCall(const std::string& literal);
+    void addReplacement(const clang::Expr* expression,
+                               const std::string& typeString, const std::string& methodCall);
 
     clang::ASTContext *Context;
     std::set <void*> myset;
