@@ -18,12 +18,12 @@ class FunctionMatcher
 {
 public:
     FunctionMatcher();
-    FunctionMatcher& addParameterMatcher(const QualTypeMatcher& func);
-    FunctionMatcher& setReturnTypeMatcher(const QualTypeMatcher& methodName);
-    FunctionMatcher& setMethodNameMatcher(const std::string& methodName);
-    FunctionMatcher& setClassNameMatcher(const std::string& className);
-    FunctionMatcher& setAccessSpecifierMatcher(clang::AccessSpecifier specifier);
-    bool match(clang::CXXMethodDecl* decl) const;
+    FunctionMatcher& matchParameter(const QualTypeMatcher& func);
+    FunctionMatcher& matchReturnType(const QualTypeMatcher& methodName);
+    FunctionMatcher& matchMethodName(const std::string& methodName);
+    FunctionMatcher& matchClassName(const std::string& className);
+    FunctionMatcher& matchAccessSpecifier(clang::AccessSpecifier specifier);
+    bool isMatch(clang::CXXMethodDecl* decl) const;
 
 private:
     bool matchArguments(clang::CXXMethodDecl* decl) const;

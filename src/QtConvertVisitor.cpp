@@ -11,15 +11,15 @@ QtConvertVisitor::QtConvertVisitor(clang::ASTContext *Context)
           _rewriter(Context->getSourceManager(), Context->getLangOpts()),
           m_resolver(Context->getLangOpts())
 {
-    m_connectMatcher.setClassNameMatcher("QObject")
-            .setMethodNameMatcher("connect")
-            .setReturnTypeMatcher(TypeMatchers::isQMetaObjectConnectionType)
-            .setAccessSpecifierMatcher(clang::AccessSpecifier::AS_public)
-            .addParameterMatcher(TypeMatchers::isQObjectPtrType)
-            .addParameterMatcher(TypeMatchers::isConstCharPtrType)
-            .addParameterMatcher(TypeMatchers::isQObjectPtrType)
-            .addParameterMatcher(TypeMatchers::isConstCharPtrType)
-            .addParameterMatcher(TypeMatchers::isQtConnectionTypeEnum);
+    m_connectMatcher.matchClassName("QObject")
+            .matchMethodName("connect")
+            .matchReturnType(TypeMatchers::isQMetaObjectConnectionType)
+            .matchAccessSpecifier(clang::AccessSpecifier::AS_public)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isQtConnectionTypeEnum);
 }
 
 bool QtConvertVisitor::VisitNamespaceDecl(clang::NamespaceDecl* context)
@@ -30,7 +30,7 @@ bool QtConvertVisitor::VisitNamespaceDecl(clang::NamespaceDecl* context)
 
 bool QtConvertVisitor::VisitCXXMethodDecl(clang::CXXMethodDecl* declaration)
 {
-    if (m_connectMatcher.match(declaration))
+    if (m_connectMatcher.isMatch(declaration))
     {
         CustomPrinter::printMethod(declaration);
         myset.insert(declaration);

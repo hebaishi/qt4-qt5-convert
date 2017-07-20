@@ -10,37 +10,37 @@ FunctionMatcher::FunctionMatcher() :
     m_specifier(clang::AccessSpecifier::AS_none)
 {}
 
-FunctionMatcher &FunctionMatcher::addParameterMatcher(const QualTypeMatcher &func)
+FunctionMatcher &FunctionMatcher::matchParameter(const QualTypeMatcher &func)
 {
     m_parameters.push_back(func);
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::setReturnTypeMatcher(const QualTypeMatcher &methodName)
+FunctionMatcher &FunctionMatcher::matchReturnType(const QualTypeMatcher &methodName)
 {
     m_returnType = methodName;
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::setMethodNameMatcher(const std::string &methodName)
+FunctionMatcher &FunctionMatcher::matchMethodName(const std::string &methodName)
 {
     m_methodName = methodName;
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::setClassNameMatcher(const std::string &className)
+FunctionMatcher &FunctionMatcher::matchClassName(const std::string &className)
 {
     m_className = className;
     return *this;
 }
 
-FunctionMatcher &FunctionMatcher::setAccessSpecifierMatcher(clang::AccessSpecifier specifier)
+FunctionMatcher &FunctionMatcher::matchAccessSpecifier(clang::AccessSpecifier specifier)
 {
     m_specifier = specifier;
     return *this;
 }
 
-bool FunctionMatcher::match(clang::CXXMethodDecl *decl) const
+bool FunctionMatcher::isMatch(clang::CXXMethodDecl *decl) const
 {
     assert(!m_methodName.empty());
     assert(!m_className.empty());
