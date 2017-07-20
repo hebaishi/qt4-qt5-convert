@@ -8,6 +8,9 @@ set(
   NamespaceResolver.cpp
   FunctionMatcher.cpp
   CustomPrinter.cpp
+  QtConvertAction.cpp
+  QtConvertConsumer.cpp
+  QtConvertVisitor.cpp
 )
 
 set(
@@ -17,6 +20,9 @@ set(
   NamespaceResolver.h
   FunctionMatcher.h
   CustomPrinter.h
+  QtConvertAction.h
+  QtConvertConsumer.h
+  QtConvertVisitor.h
 )
 
 add_clang_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
