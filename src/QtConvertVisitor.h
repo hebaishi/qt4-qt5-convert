@@ -40,6 +40,7 @@ private:
     std::vector<clang::tooling::Replacement> replacements;
     NamespaceResolver m_resolver;
     MethodMatcher m_connectMatcher;
+    FunctionMatcher m_qFlagLocationMatcher;
 };
 
 #endif

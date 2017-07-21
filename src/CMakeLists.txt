@@ -6,6 +6,7 @@ set(
   TypeMatchers.cpp
   ContextMatchers.cpp
   NamespaceResolver.cpp
+  FunctionMatcher.cpp
   MethodMatcher.cpp
   CustomPrinter.cpp
   QtConvertAction.cpp
@@ -18,6 +19,7 @@ set(
   TypeMatchers.h
   ContextMatchers.h
   NamespaceResolver.h
+  FunctionMatcher.h
   MethodMatcher.h
   CustomPrinter.h
   QtConvertAction.h

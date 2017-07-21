@@ -12,14 +12,18 @@ QtConvertVisitor::QtConvertVisitor(clang::ASTContext *Context)
           m_resolver(Context->getLangOpts())
 {
     m_connectMatcher.matchClassName("QObject")
-            .matchMethodName("connect")
+            .matchPublicMethod()
+            .matchFunctionName("connect")
             .matchReturnType(TypeMatchers::isQMetaObjectConnectionType)
-            .matchAccessSpecifier(clang::AccessSpecifier::AS_public)
             .matchParameter(TypeMatchers::isQObjectPtrType)
             .matchParameter(TypeMatchers::isConstCharPtrType)
             .matchParameter(TypeMatchers::isQObjectPtrType)
             .matchParameter(TypeMatchers::isConstCharPtrType)
             .matchParameter(TypeMatchers::isQtConnectionTypeEnum);
+
+    m_qFlagLocationMatcher.matchFunctionName("qFlagLocation")
+            .matchReturnType(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType);
 }
 
 bool QtConvertVisitor::VisitNamespaceDecl(clang::NamespaceDecl* context)
@@ -89,11 +93,18 @@ std::string QtConvertVisitor::getMethodCallIfPresent(const clang::Expr *expressi
 {
     if (const clang::CallExpr *qflaglocationCall = clang::dyn_cast<clang::CallExpr>(expression))
     {
-        if (const clang::ImplicitCastExpr *castExpr = clang::dyn_cast<clang::ImplicitCastExpr>(qflaglocationCall->getArg(0)))
+        auto callee = qflaglocationCall->getDirectCallee();
+        if (callee)
         {
-            if (const clang::StringLiteral* literal = clang::dyn_cast<clang::StringLiteral>(*castExpr->child_begin()))
+            if (m_qFlagLocationMatcher.isMatch(callee->getFirstDecl()))
             {
-                return extractMethodCall(literal->getBytes());
+                if (const clang::ImplicitCastExpr *castExpr = clang::dyn_cast<clang::ImplicitCastExpr>(qflaglocationCall->getArg(0)))
+                {
+                    if (const clang::StringLiteral* literal = clang::dyn_cast<clang::StringLiteral>(*castExpr->child_begin()))
+                    {
+                        return extractMethodCall(literal->getBytes());
+                    }
+                }
             }
         }
     }
