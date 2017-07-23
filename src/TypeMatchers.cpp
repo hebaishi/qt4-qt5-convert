@@ -68,4 +68,9 @@ bool isQMetaObjectConnectionType(const clang::QualType &type)
     return false;
 }
 
+bool isBoolType(const clang::QualType &type)
+{
+    return type.getTypePtr()->isBooleanType();
+}
+
 }

@@ -33,13 +33,14 @@ private:
     std::string extractMethodCall(const std::string& literal);
     void addReplacement(const clang::Expr* expression,
                                const std::string& typeString, const std::string& methodCall);
+    void setupMatchers();
 
     clang::ASTContext *Context;
     std::set <void*> myset;
     clang::Rewriter _rewriter;
     std::vector<clang::tooling::Replacement> replacements;
     NamespaceResolver m_resolver;
-    MethodMatcher m_connectMatcher;
+    std::vector<MethodMatcher> m_connectMatchers;
     FunctionMatcher m_qFlagLocationMatcher;
 };
 

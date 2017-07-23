@@ -11,6 +11,7 @@ bool isQObjectPtrType(const clang::QualType& type);
 bool isQtConnectionTypeEnum(const clang::QualType& type);
 bool isQMetaObjectConnectionType(const clang::QualType& type);
 bool isVoidType(const clang::QualType& type);
+bool isBoolType(const clang::QualType& type);
 
 }
 

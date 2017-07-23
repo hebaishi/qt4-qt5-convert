@@ -11,19 +11,7 @@ QtConvertVisitor::QtConvertVisitor(clang::ASTContext *Context)
           _rewriter(Context->getSourceManager(), Context->getLangOpts()),
           m_resolver(Context->getLangOpts())
 {
-    m_connectMatcher.matchClassName("QObject")
-            .matchPublicMethod()
-            .matchFunctionName("connect")
-            .matchReturnType(TypeMatchers::isQMetaObjectConnectionType)
-            .matchParameter(TypeMatchers::isQObjectPtrType)
-            .matchParameter(TypeMatchers::isConstCharPtrType)
-            .matchParameter(TypeMatchers::isQObjectPtrType)
-            .matchParameter(TypeMatchers::isConstCharPtrType)
-            .matchParameter(TypeMatchers::isQtConnectionTypeEnum);
-
-    m_qFlagLocationMatcher.matchFunctionName("qFlagLocation")
-            .matchReturnType(TypeMatchers::isConstCharPtrType)
-            .matchParameter(TypeMatchers::isConstCharPtrType);
+    setupMatchers();
 }
 
 bool QtConvertVisitor::VisitNamespaceDecl(clang::NamespaceDecl* context)
@@ -34,10 +22,13 @@ bool QtConvertVisitor::VisitNamespaceDecl(clang::NamespaceDecl* context)
 
 bool QtConvertVisitor::VisitCXXMethodDecl(clang::CXXMethodDecl* declaration)
 {
-    if (m_connectMatcher.isMatch(declaration))
+    for (const auto& methodMatcher : m_connectMatchers)
     {
-        CustomPrinter::printMethod(declaration);
-        myset.insert(declaration);
+        if (methodMatcher.isMatch(declaration))
+        {
+            CustomPrinter::printMethod(declaration);
+            myset.insert(declaration);
+        }
     }
     return true;
 }
@@ -135,4 +126,42 @@ void QtConvertVisitor::addReplacement(const clang::Expr *expression, const std::
     _rewriter.ReplaceText(clang::SourceRange(
                               fullStartLocation.first, fullStartLocation.second
                               ), replacementText);
+}
+
+void QtConvertVisitor::setupMatchers()
+{
+    m_connectMatchers.push_back(MethodMatcher());
+    m_connectMatchers.back().matchClassName("QObject")
+            .matchPublicMethod()
+            .matchFunctionName("connect")
+            .matchReturnType(TypeMatchers::isQMetaObjectConnectionType)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isQtConnectionTypeEnum);
+
+    m_connectMatchers.push_back(MethodMatcher());
+    m_connectMatchers.back().matchClassName("QObject")
+            .matchPublicMethod()
+            .matchFunctionName("connect")
+            .matchReturnType(TypeMatchers::isQMetaObjectConnectionType)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isQtConnectionTypeEnum);
+
+    m_connectMatchers.push_back(MethodMatcher());
+    m_connectMatchers.back().matchClassName("QObject")
+            .matchPublicMethod()
+            .matchFunctionName("disconnect")
+            .matchReturnType(TypeMatchers::isBoolType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType);
+
+
+    m_qFlagLocationMatcher.matchFunctionName("qFlagLocation")
+            .matchReturnType(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType);
 }
