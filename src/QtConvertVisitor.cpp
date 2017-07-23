@@ -156,6 +156,16 @@ void QtConvertVisitor::setupMatchers()
             .matchPublicMethod()
             .matchFunctionName("disconnect")
             .matchReturnType(TypeMatchers::isBoolType)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType)
+            .matchParameter(TypeMatchers::isQObjectPtrType)
+            .matchParameter(TypeMatchers::isConstCharPtrType);
+
+    m_connectMatchers.push_back(MethodMatcher());
+    m_connectMatchers.back().matchClassName("QObject")
+            .matchPublicMethod()
+            .matchFunctionName("disconnect")
+            .matchReturnType(TypeMatchers::isBoolType)
             .matchParameter(TypeMatchers::isConstCharPtrType)
             .matchParameter(TypeMatchers::isQObjectPtrType)
             .matchParameter(TypeMatchers::isConstCharPtrType);
